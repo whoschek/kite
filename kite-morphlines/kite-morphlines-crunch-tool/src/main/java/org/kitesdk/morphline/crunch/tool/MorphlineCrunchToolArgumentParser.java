@@ -46,7 +46,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.log4j.PropertyConfigurator;
 import org.kitesdk.data.Formats;
-import org.kitesdk.data.PartitionStrategy;
+import org.kitesdk.data.spi.PartitionStrategyParser;
 import org.kitesdk.morphline.crunch.tool.MorphlineCrunchToolOptions.InputDatasetSpec;
 import org.kitesdk.morphline.crunch.tool.MorphlineCrunchToolOptions.PipelineType;
 import org.slf4j.Logger;
@@ -315,126 +315,12 @@ final class MorphlineCrunchToolArgumentParser {
         .setDefault(Formats.AVRO.getName())
         .help("The type of format to use on output for Kite datasets. Can be one of ['avro', 'parquet'].");
 
-    ArgumentGroup outputDatasetPartitioningArgGroup = parser.addArgumentGroup(
-        "Output dataset partitioning arguments (also see http://ow.ly/uSchn)");
-    
-    final List<IdentityFieldPartitionerSpec> fieldPartitionSpecs = new ArrayList();
-
-    outputDatasetPartitioningArgGroup.addArgument("--output-dataset-partition-strategy-identity-source-name")
-        .metavar("STRING")
-        .type(String.class)
-        .help("The entity field name from which to get values to be partitioned. Multiple "
-            + "--output-dataset-partition-strategy-identity-source-name arguments can be specified. "
-            + "Example that partitions along two dimensions, in that order: \n"
-            + "--output-dataset-partition-strategy-identity-source-name fieldA1 \n"
-            + "--output-dataset-partition-strategy-identity-source fieldA2 \n"
-            + "--output-dataset-partition-strategy-identity-class " + String.class.getName() + "\n"
-            + "--output-dataset-partition-strategy-identity-buckets 100 \n"
-            + "--output-dataset-partition-strategy-identity-source-name fieldB1 \n"
-            + "--output-dataset-partition-strategy-identity-source fieldB2 \n"
-            + "--output-dataset-partition-strategy-identity-class " + Integer.class.getName() + "\n"
-            + "--output-dataset-partition-strategy-identity-buckets 100")
-        .action(new ArgumentAction() {
-    
-          @Override
-          public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value)
-              throws ArgumentParserException {
-            
-            fieldPartitionSpecs.add(new IdentityFieldPartitionerSpec(value.toString()));
-          }
-    
-          @Override
-          public boolean consumeArgument() { return true; }
-          
-          @Override
-          public void onAttach(Argument arg) {}
-        });
-
-    outputDatasetPartitioningArgGroup.addArgument("--output-dataset-partition-strategy-identity-name")
-        .metavar("STRING")
-        .type(String.class)
-        .help("A name for the partition field of the most recently specified partitioner.")
-        .action(new ArgumentAction() {
-    
-          @Override
-          public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value)
-              throws ArgumentParserException {
-            
-            if (fieldPartitionSpecs.isEmpty()) {
-              throw new ArgumentParserException(
-                  "You must specify --output-dataset-partition-strategy-identity-source-name prior to --output-dataset-partition-strategy-identity-name", parser);
-            }
-            IdentityFieldPartitionerSpec current = fieldPartitionSpecs.get(fieldPartitionSpecs.size() - 1);
-            current.setName(value.toString());
-          }
-    
-          @Override
-          public boolean consumeArgument() { return true; }
-          
-          @Override
-          public void onAttach(Argument arg) {}
-        });
-
-    outputDatasetPartitioningArgGroup.addArgument("--output-dataset-partition-strategy-identity-class")
-        .metavar("FQCN")
-        .type(String.class)
-        .setDefault(String.class.getName())
-        .help("The type of the partition field of the most recently specified partitioner. This must match the schema.")
-        .action(new ArgumentAction() {
-    
-          @Override
-          public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value)
-              throws ArgumentParserException {
-            
-            if (fieldPartitionSpecs.isEmpty()) {
-              throw new ArgumentParserException(
-                  "You must specify --output-dataset-partition-strategy-identity-source-name prior to --output-dataset-partition-strategy-identity-class", parser);
-            }
-            IdentityFieldPartitionerSpec current = fieldPartitionSpecs.get(fieldPartitionSpecs.size() - 1);
-            Class type;
-            try {
-              type = Class.forName(value.toString());
-            } catch (ClassNotFoundException e) {
-              throw new RuntimeException(e);
-            }
-            current.setType(type);
-          }
-
-          @Override
-          public boolean consumeArgument() { return true; }
-          
-          @Override
-          public void onAttach(Argument arg) {}
-        });
-    
-    outputDatasetPartitioningArgGroup.addArgument("--output-dataset-partition-strategy-identity-buckets")
-        .metavar("INTEGER")
-        .type(Integer.class)
-        .choices(new RangeArgumentChoice(1, Integer.MAX_VALUE))
-        .setDefault(1)
-        .help("A hint as to the number of partitions that will be created for the most recently "
-            + "specified partitioner (i.e. the number of discrete values for the "
-            + "--output-dataset-partition-strategy-identity-name field in the data.")
-        .action(new ArgumentAction() {
-    
-          @Override
-          public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value)
-              throws ArgumentParserException {
-            
-            if (fieldPartitionSpecs.isEmpty()) {
-              throw new ArgumentParserException(
-                  "You must specify --output-dataset-partition-strategy-identity-source-name prior to --output-dataset-partition-strategy-identity-buckets", parser);
-            }
-            IdentityFieldPartitionerSpec current = fieldPartitionSpecs.get(fieldPartitionSpecs.size() - 1);
-            current.setBuckets(Integer.parseInt(value.toString()));
-          }
-    
-          @Override
-          public boolean consumeArgument() { return true; }
-          
-          @Override
-          public void onAttach(Argument arg) {}
-        });
+    Argument outputDatasetPartitionStrategyArg = outputDatasetArgGroup.addArgument("--output-dataset-partition-strategy")
+        .metavar("FILE")
+        .type(new FileArgumentType().verifyExists().verifyIsFile().verifyCanRead())
+        .help("Relative or absolute path to a JSON file on the local file system that defines how the "
+            + "output dataset shall be partitioned (also see http://ow.ly/yxvFz). "
+            + "Example: src/test/resources/partitioning.json");
     
     ArgumentGroup outputFileArgGroup = parser.addArgumentGroup("Output file arguments");
     
@@ -652,13 +538,10 @@ final class MorphlineCrunchToolArgumentParser {
       opts.outputFileFormat = getClass(outputFileFormatArg, ns, FileOutputFormat.class, parser, OUTPUT_FORMAT_SUBSTITUTIONS);
       opts.preProcessor = newInstance(preProcessorClassArg, ns, PipelineFn.class, parser);
       opts.postProcessor = newInstance(postProcessorClassArg, ns, PipelineFn.class, parser);
-      if (fieldPartitionSpecs.size() > 0) {
-        PartitionStrategy.Builder builder = new PartitionStrategy.Builder();
-        for (IdentityFieldPartitionerSpec fieldPartitionSpec : fieldPartitionSpecs) {
-          builder = fieldPartitionSpec.apply(builder, parser);
-        }
-        opts.outputDatasetPartitionStrategy = builder.build();
-      }      
+      File partitionStrategyFile = ns.get(outputDatasetPartitionStrategyArg.getDest());
+      if (partitionStrategyFile != null) {
+        opts.outputDatasetPartitionStrategy = PartitionStrategyParser.parse(partitionStrategyFile);
+      }
     } catch (ArgumentParserException e) {
       parser.handleError(e);
       return 1;
@@ -734,45 +617,6 @@ final class MorphlineCrunchToolArgumentParser {
   }
   
 
-  ///////////////////////////////////////////////////////////////////////////////
-  // Nested classes:
-  ///////////////////////////////////////////////////////////////////////////////
-  private static final class IdentityFieldPartitionerSpec {
-    
-    private final String sourceName; 
-    private String name = null;
-    private Class type = String.class;
-    private int buckets = 1;
-    
-    public IdentityFieldPartitionerSpec(String sourceName) {
-      Preconditions.checkNotNull(sourceName);
-      this.sourceName = sourceName;
-    }
-    
-    public void setName(String name) {
-      this.name = name;
-    }
-    
-    public void setType(Class type) {
-      this.type = type;
-    }
-    
-    public void setBuckets(int buckets) {
-      this.buckets = buckets;
-    }
-    
-    public PartitionStrategy.Builder apply(PartitionStrategy.Builder builder, ArgumentParser parser) 
-        throws ArgumentParserException {
-      
-      if (name == null) {
-        throw new ArgumentParserException(
-            "Missing --output-dataset-partition-strategy-identity-name parameter", parser);
-      }
-      return builder.identity(sourceName, name, buckets);
-    }
-  }
-
-  
   ///////////////////////////////////////////////////////////////////////////////
   // Nested classes:
   ///////////////////////////////////////////////////////////////////////////////

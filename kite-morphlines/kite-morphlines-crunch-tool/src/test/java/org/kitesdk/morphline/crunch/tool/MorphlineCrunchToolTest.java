@@ -142,10 +142,7 @@ public class MorphlineCrunchToolTest extends Assert {
         "--output-write-mode=" + outputWriteMode,
     };
     if (isPartitioned) {
-      args = ObjectArrays.concat(args, "--output-dataset-partition-strategy-identity-source-name=text");
-      args = ObjectArrays.concat(args, "--output-dataset-partition-strategy-identity-name=ptext");
-      args = ObjectArrays.concat(args, "--output-dataset-partition-strategy-identity-class=java.lang.String");
-      args = ObjectArrays.concat(args, "--output-dataset-partition-strategy-identity-buckets=2");
+      args = ObjectArrays.concat(args, "--output-dataset-partition-strategy=" + RESOURCES_DIR + "/partitioning.json");
     }
     if (morphlineConfigFile != null) {
       args = ObjectArrays.concat(args, "--morphline-file=" + RESOURCES_DIR + "/test-morphlines/" + morphlineConfigFile);
