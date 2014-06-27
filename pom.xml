@@ -922,6 +922,11 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.apache.crunch</groupId>
+        <artifactId>crunch-test</artifactId>
+        <version>${vers.crunch}</version>
+      </dependency>
+      <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-all</artifactId>
         <version>${vers.mockito}</version>
