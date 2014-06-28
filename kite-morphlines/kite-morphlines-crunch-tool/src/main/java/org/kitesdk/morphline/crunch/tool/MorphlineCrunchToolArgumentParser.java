@@ -36,9 +36,9 @@ import net.sourceforge.argparse4j.inf.FeatureControl;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import org.apache.avro.Schema;
-import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.crunch.Pair;
 import org.apache.crunch.Target.WriteMode;
+import org.apache.crunch.types.avro.AvroInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
@@ -68,7 +68,7 @@ final class MorphlineCrunchToolArgumentParser {
   
   private static final Map<String, String> INPUT_FORMAT_SUBSTITUTIONS = ImmutableMap.of(
       "text", TextInputFormat.class.getName(),
-      "avro", AvroKeyInputFormat.class.getName(),
+      "avro", AvroInputFormat.class.getName(),
       "avroParquet", AvroParquetInputFormat.class.getName()
       );
 
@@ -435,7 +435,7 @@ final class MorphlineCrunchToolArgumentParser {
                     + "hadoop fs -copyFromLocal src/test/resources/test-documents/hello1.txt hdfs:/user/systest/input/\n"
                     + "hadoop \\\n"
                     + "  --config /etc/hadoop/conf.cloudera.YARN-1 \\\n"
-                    + "  jar target/kite-data-crunch-morphlines-*-job.jar " + MorphlineCrunchTool.class.getName() + " \\\n"
+                    + "  jar target/kite-morphlines-crunch-tool-*-job.jar " + MorphlineCrunchTool.class.getName() + " \\\n"
                     + "  -D 'mapred.child.java.opts=-Xmx500m' \\\n"
                     + "  --files src/test/resources/string.avsc \\\n"
                     + "  --morphline-file src/test/resources/test-morphlines/readLineWithOpenFileCWD.conf \\\n"
@@ -467,7 +467,7 @@ final class MorphlineCrunchToolArgumentParser {
                     + "# and on the way transform data with a morphline:\n"
                     + "hadoop \\\n"
                     + "  --config /etc/hadoop/conf.cloudera.YARN-1 \\\n"
-                    + "  jar target/kite-data-crunch-morphlines-*-job.jar " + MorphlineCrunchTool.class.getName() + " \\\n"
+                    + "  jar target/kite-morphlines-crunch-tool-*-job.jar " + MorphlineCrunchTool.class.getName() + " \\\n"
                     + "  -D 'mapred.child.java.opts=-Xmx500m' \\\n"
                     + "  --files src/test/resources/string.avsc \\\n"
                     + "  --input-dataset-repository repo:hdfs:/user/systest/data1 \\\n"

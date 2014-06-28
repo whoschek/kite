@@ -41,7 +41,6 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.FsInput;
-import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.crunch.CrunchRuntimeException;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.MapFn;
@@ -61,6 +60,7 @@ import org.apache.crunch.io.impl.FileTableSourceImpl;
 import org.apache.crunch.io.parquet.AvroParquetFileSource;
 import org.apache.crunch.io.text.NLineFileSource;
 import org.apache.crunch.lib.Sort;
+import org.apache.crunch.types.avro.AvroInputFormat;
 import org.apache.crunch.types.avro.Avros;
 import org.apache.crunch.types.writable.WritableTypeFamily;
 import org.apache.crunch.types.writable.Writables;
@@ -309,7 +309,7 @@ public class MorphlineCrunchTool extends Configured implements Tool {
       for (String file : listFiles(tmpFs, tmpFile)) {
         filePaths.add(new Path(file));
       }
-      if (opts.inputFileFormat.isAssignableFrom(AvroKeyInputFormat.class)) { 
+      if (opts.inputFileFormat.isAssignableFrom(AvroInputFormat.class)) { 
         // hack that fixes IncompatibleClassChangeError
         Schema schema = opts.inputFileReaderSchema != null ? 
             opts.inputFileReaderSchema : getAvroSchemaFromPath(filePaths.get(0), new Configuration());
