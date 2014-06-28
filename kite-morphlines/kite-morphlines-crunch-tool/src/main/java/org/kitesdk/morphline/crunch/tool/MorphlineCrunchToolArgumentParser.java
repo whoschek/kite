@@ -153,7 +153,7 @@ final class MorphlineCrunchToolArgumentParser {
         .help("Kite Dataset URI of the dataset to read from. "
             + "Multiple --input-dataset-uri arguments can be specified. Examples: \n"
             + "--input-dataset-uri dataset:file:/path/to/events\n"
-            + "--input-dataset-uri dataset:hdfs://host:/events");
+            + "--input-dataset-uri dataset:hdfs://localhost:/path/to/events");
 
     final List<InputDatasetSpec> inputDatasetSpecs = new ArrayList();
     
