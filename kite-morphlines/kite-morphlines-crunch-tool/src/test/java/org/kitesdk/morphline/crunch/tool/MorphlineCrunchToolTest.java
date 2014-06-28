@@ -321,6 +321,7 @@ public class MorphlineCrunchToolTest extends Assert {
     if (format == Formats.PARQUET) {
       args = ObjectArrays.concat(args, getInputDatasetURIArgs(), String.class);
       args = ObjectArrays.concat(args, getInputDatasetURIArgs(), String.class);
+      args = ObjectArrays.concat(args, "--output-dataset-column-mapping=" + RESOURCES_DIR + "/columnMapping.json");
     } else {
       args = ObjectArrays.concat(args, getInputRepoArgs(), String.class);
       args = ObjectArrays.concat(args, getInputRepoArgs(), String.class);

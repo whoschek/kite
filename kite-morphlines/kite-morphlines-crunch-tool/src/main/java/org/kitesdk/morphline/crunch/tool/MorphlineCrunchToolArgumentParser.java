@@ -46,6 +46,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.log4j.PropertyConfigurator;
 import org.kitesdk.data.Formats;
+import org.kitesdk.data.spi.ColumnMappingParser;
 import org.kitesdk.data.spi.PartitionStrategyParser;
 import org.kitesdk.morphline.crunch.tool.MorphlineCrunchToolOptions.InputDatasetSpec;
 import org.kitesdk.morphline.crunch.tool.MorphlineCrunchToolOptions.PipelineType;
@@ -331,6 +332,12 @@ final class MorphlineCrunchToolArgumentParser {
             + "output dataset shall be partitioned (also see http://ow.ly/yxvFz). "
             + "Example: src/test/resources/partitioning.json");
     
+    Argument outputDatasetColumnMappingArg = outputDatasetArgGroup.addArgument("--output-dataset-column-mapping")
+        .metavar("FILE")
+        .type(new FileArgumentType().verifyExists().verifyIsFile().verifyCanRead())
+        .help("Relative or absolute path to a JSON file on the local file system that defines how a Kite "
+            + "entity maps to a columnar store. Example: src/test/resources/columnMapping.json");
+    
     ArgumentGroup outputFileArgGroup = parser.addArgumentGroup("Output file arguments");
     
     Argument outputDirArg = outputFileArgGroup.addArgument("--output-dir")
@@ -551,6 +558,10 @@ final class MorphlineCrunchToolArgumentParser {
       File partitionStrategyFile = ns.get(outputDatasetPartitionStrategyArg.getDest());
       if (partitionStrategyFile != null) {
         opts.outputDatasetPartitionStrategy = PartitionStrategyParser.parse(partitionStrategyFile);
+      }
+      File outputDatasetColumnMapping = ns.get(outputDatasetColumnMappingArg.getDest());
+      if (outputDatasetColumnMapping != null) {
+        opts.outputDatasetColumnMapping = ColumnMappingParser.parse(outputDatasetColumnMapping);
       }
     } catch (ArgumentParserException e) {
       parser.handleError(e);

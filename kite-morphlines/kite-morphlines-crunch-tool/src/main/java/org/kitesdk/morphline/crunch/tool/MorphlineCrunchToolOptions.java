@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.kitesdk.data.ColumnMapping;
 import org.kitesdk.data.Format;
 import org.kitesdk.data.PartitionStrategy;
 
@@ -52,6 +53,7 @@ final class MorphlineCrunchToolOptions {
   Schema outputDatasetSchema;
   Format outputDatasetFormat;
   PartitionStrategy outputDatasetPartitionStrategy;
+  ColumnMapping outputDatasetColumnMapping;
   WriteMode outputWriteMode;
   File morphlineFile;
   String morphlineId;

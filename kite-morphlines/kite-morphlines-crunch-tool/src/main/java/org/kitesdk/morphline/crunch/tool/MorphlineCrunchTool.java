@@ -429,6 +429,9 @@ public class MorphlineCrunchTool extends Configured implements Tool {
           if (opts.outputDatasetPartitionStrategy != null) {
             builder = builder.partitionStrategy(opts.outputDatasetPartitionStrategy);
           }
+          if (opts.outputDatasetColumnMapping != null) {
+            builder = builder.columnMapping(opts.outputDatasetColumnMapping);
+          }          
           outputDataset = outputRepo.create(opts.outputDatasetName, builder.build());              
         }
         target = CrunchDatasets.asTarget(outputDataset);
