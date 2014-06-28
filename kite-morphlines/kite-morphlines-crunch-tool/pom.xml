@@ -26,7 +26,7 @@
   <properties>
     <argparse4j.version>0.4.3</argparse4j.version>
     <httpclient.version>4.2.5</httpclient.version>
-    <isHadoop1>false</isHadoop1> <!-- this is overriden by hadoop-1 profile in ~/kite/pom.xml --> 
+    <skipTests>${isHadoop1}</skipTests> <!-- isHadoop1 is overriden by hadoop-1 profile in ~/kite/pom.xml -->
   </properties>
 
   <dependencies>
@@ -305,7 +305,6 @@
               <value>target/derby.log</value>
             </property>
           </systemProperties>
-          <skipTests>${isHadoop1}</skipTests>
         </configuration>
       </plugin>
       <plugin>
