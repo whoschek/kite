@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,6 +64,7 @@ import org.kitesdk.data.DatasetRepository;
 import org.kitesdk.data.DatasetWriter;
 import org.kitesdk.data.Format;
 import org.kitesdk.data.Formats;
+import org.kitesdk.data.spi.URIBuilder;
 import org.kitesdk.morphline.api.MorphlineRuntimeException;
 import org.kitesdk.morphline.crunch.tool.MorphlineCrunchTool;
 import org.kitesdk.morphline.crunch.tool.PipelineFn;
@@ -160,6 +162,13 @@ public class MorphlineCrunchToolTest extends Assert {
         "--input-dataset-include=literal:" + DATASET_NAME,
         "--input-dataset-exclude=regex:xxxxxxxxxxx.*",
         "--input-dataset-exclude=glob:yyyyyyyyyy*",
+        };
+  }
+  
+  private String[] getInputDatasetURIArgs() {
+    URI datasetUri = new URIBuilder("repo:file:" + inputPath, DATASET_NAME).build();
+    return new String[] {
+        "--input-dataset-uri=" + datasetUri
         };
   }
   
@@ -309,8 +318,13 @@ public class MorphlineCrunchToolTest extends Assert {
     }
     Arrays.sort(expected);
     String[] args = getInitialArgs(EXTRACT_AVRO_PATH);
-    args = ObjectArrays.concat(args, getInputRepoArgs(), String.class);
-    args = ObjectArrays.concat(args, getInputRepoArgs(), String.class);
+    if (format == Formats.PARQUET) {
+      args = ObjectArrays.concat(args, getInputDatasetURIArgs(), String.class);
+      args = ObjectArrays.concat(args, getInputDatasetURIArgs(), String.class);
+    } else {
+      args = ObjectArrays.concat(args, getInputRepoArgs(), String.class);
+      args = ObjectArrays.concat(args, getInputRepoArgs(), String.class);
+    }
     args = ObjectArrays.concat(args, getOutputRepoArgs(), String.class);
     if (format == Formats.PARQUET) {
       args = ObjectArrays.concat(args, "--output-dataset-format=parquet");

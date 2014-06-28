@@ -146,6 +146,14 @@ final class MorphlineCrunchToolArgumentParser {
 
     ArgumentGroup inputDatasetArgGroup = parser.addArgumentGroup("Input dataset arguments (also see http://ow.ly/uSn4q)");
 
+    Argument inputDatasetUrisArg = inputDatasetArgGroup.addArgument("--input-dataset-uri")
+        .action(Arguments.append())
+        .metavar("DATASET_URI")
+        .help("Kite Dataset URI of the dataset to read from. "
+            + "Multiple --input-dataset-uri arguments can be specified. Examples: \n"
+            + "--input-dataset-uri dataset:file:/path/to/events\n"
+            + "--input-dataset-uri dataset:hdfs://host:/events");
+
     final List<InputDatasetSpec> inputDatasetSpecs = new ArrayList();
     
     inputDatasetArgGroup.addArgument("--input-dataset-repository")
@@ -255,7 +263,8 @@ final class MorphlineCrunchToolArgumentParser {
         .type(new PathArgumentType(conf).verifyExists().verifyCanRead())
         .nargs("*")
         .setDefault()
-        .help("HDFS URI of file or directory tree to ingest (unless --input-dataset-repository is specified).");
+        .help("HDFS URI of file or directory tree to ingest (unless --input-dataset-repository or "
+            + "--input-dataset-uri is specified).");
 
     Argument inputFileListArg = inputFileArgGroup.addArgument("--input-file-list")
         .action(Arguments.append())
@@ -271,8 +280,8 @@ final class MorphlineCrunchToolArgumentParser {
         .help("The Hadoop FileInputFormat to use for extracting data from splitable HDFS files. Can be a "
             + "fully qualified Java class name or one of ['text', 'avro', 'avroParquet']. If this option "
             + "is present the extraction phase will emit a series of input data records rather than a series "
-            + "of HDFS file paths (unless --input-dataset-repo is given, in which case the extraction phase "
-            + "will emit Avro records from the (splitable) Kite dataset).");
+            + "of HDFS file paths (unless --input-dataset-repository or --input-dataset-uri is given, in "
+            + "which case the extraction phase will emit Avro records from the (splitable) Kite dataset).");
 
     Argument inputFileProjectionSchemaArg = inputFileArgGroup.addArgument("--input-file-projection-schema")
         .metavar("FILE")
@@ -515,6 +524,7 @@ final class MorphlineCrunchToolArgumentParser {
 
     opts.inputFileLists = getList(ns, inputFileListArg);
     opts.inputFiles = ns.get(inputFilesArg.getDest());
+    opts.inputDatasetURIs = getList(ns, inputDatasetUrisArg);
     opts.inputDatasetSpecs = inputDatasetSpecs;
     opts.outputDatasetRepository = ns.get(outputDatasetRepoArg.getDest());
     opts.outputDatasetName = ns.get(outputDatasetNameArg.getDest());

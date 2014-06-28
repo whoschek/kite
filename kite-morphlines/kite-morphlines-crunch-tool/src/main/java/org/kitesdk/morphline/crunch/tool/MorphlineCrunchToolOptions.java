@@ -43,6 +43,7 @@ final class MorphlineCrunchToolOptions {
   Class<FileInputFormat> inputFileFormat; // e.g. TextInputFormat
   Schema inputFileReaderSchema;
   Schema inputFileProjectionSchema;
+  List<String> inputDatasetURIs;
   List<InputDatasetSpec> inputDatasetSpecs;
   Path outputDir;
   Class<FileOutputFormat<Writable, Writable>> outputFileFormat; // e.g. TextOutputFormat

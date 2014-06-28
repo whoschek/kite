@@ -78,6 +78,7 @@ import org.kitesdk.data.Dataset;
 import org.kitesdk.data.DatasetDescriptor;
 import org.kitesdk.data.DatasetRepositories;
 import org.kitesdk.data.DatasetRepository;
+import org.kitesdk.data.Datasets;
 import org.kitesdk.data.crunch.CrunchDatasets;
 import org.kitesdk.morphline.crunch.tool.MorphlineCrunchToolOptions.InputDatasetSpec;
 import org.kitesdk.morphline.crunch.tool.MorphlineCrunchToolOptions.PipelineType;
@@ -238,120 +239,137 @@ public class MorphlineCrunchTool extends Configured implements Tool {
       throws IOException {
     
     List<PCollection> collections = new ArrayList<PCollection>();
-    if (opts.inputDatasetSpecs.size() > 0) { // handle input Kite datasets
-      for (InputDatasetSpec inputDatasetSpec : opts.inputDatasetSpecs) {
-        DatasetRepository inputDatasetRepo = DatasetRepositories.open(inputDatasetSpec.getRepositoryUri());
-        List<String> includes = inputDatasetSpec.getIncludes();
-        if (includes.isEmpty()) {
-          includes = Collections.singletonList("*");
-        }
-        NameMatcher matcher = PatternNameMatcher.parse(includes, inputDatasetSpec.getExcludes());
-        List<String> matchingDatasetNames = new ArrayList<String>();
-        PCollection collection = null;
-        for (String datasetName : inputDatasetRepo.list()) {
-          if (matcher.matches(datasetName)) {
-            Dataset inputDataset = inputDatasetRepo.load(datasetName);
-            // TODO: Consider adding optional params to upstream CrunchDatasets.asSource() API 
-            // to allow override of reader schema and perhaps projection schema
-            Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset, GenericData.Record.class);
-            if (collection == null) {
-              collection = pipeline.read(source);
-            } else {
-              collection = collection.union(pipeline.read(source));
-            }
-            matchingDatasetNames.add(datasetName);
+    
+    // handle input dataset URIs, if any
+    PCollection collection = null;
+    for (String datasetURI : opts.inputDatasetURIs) {
+      Dataset inputDataset = Datasets.load(datasetURI);
+      Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset, GenericData.Record.class);
+      if (collection == null) {
+        collection = pipeline.read(source);
+      } else {
+        collection = collection.union(pipeline.read(source));
+      }
+    }
+    if (collection != null) {
+      collections.add(collection);
+    }
+    collection = null;
+    
+    // handle input Kite datasets
+    for (InputDatasetSpec inputDatasetSpec : opts.inputDatasetSpecs) {
+      DatasetRepository inputDatasetRepo = DatasetRepositories.open(inputDatasetSpec.getRepositoryUri());
+      List<String> includes = inputDatasetSpec.getIncludes();
+      if (includes.isEmpty()) {
+        includes = Collections.singletonList("*");
+      }
+      NameMatcher matcher = PatternNameMatcher.parse(includes, inputDatasetSpec.getExcludes());
+      List<String> matchingDatasetNames = new ArrayList<String>();
+      collection = null;
+      for (String datasetName : inputDatasetRepo.list()) {
+        if (matcher.matches(datasetName)) {
+          Dataset inputDataset = inputDatasetRepo.load(datasetName);
+          // TODO: Consider adding optional params to upstream CrunchDatasets.asSource() API 
+          // to allow override of reader schema and perhaps projection schema
+          Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset, GenericData.Record.class);
+          if (collection == null) {
+            collection = pipeline.read(source);
+          } else {
+            collection = collection.union(pipeline.read(source));
           }
-        }
-        LOG.info("For repository {} selected the following datasets for ingestion: {}", 
-            inputDatasetSpec.getRepositoryUri(), matchingDatasetNames);
-        if (collection != null) {
-          collections.add(collection);
+          matchingDatasetNames.add(datasetName);
         }
       }
-      if (collections.isEmpty()) {
-        LOG.info("No input datasets found - nothing to process");
-        return Collections.<PCollection>emptyList();
+      LOG.info("For repository {} selected the following datasets for ingestion: {}", 
+          inputDatasetSpec.getRepositoryUri(), matchingDatasetNames);
+      if (collection != null) {
+        collections.add(collection);
       }
-    } else { // handle input files (not Kite datasets)
-      tmpFile = new Path(
-          pipeline.getConfiguration().get("hadoop.tmp.dir", "/tmp"), 
-          MorphlineCrunchTool.class.getName() + "-" + UUID.randomUUID().toString());
-      FileSystem tmpFs = tmpFile.getFileSystem(pipeline.getConfiguration());          
-      LOG.debug("Creating list of input files for mappers: {}", tmpFile);
-      long numFiles = addInputFiles(opts.inputFiles, opts.inputFileLists, tmpFile, pipeline.getConfiguration());
-      if (numFiles == 0) {
-        LOG.info("No input files found - nothing to process");
-        return Collections.<PCollection>emptyList();
+    }
+
+    if (opts.inputFiles.isEmpty() && opts.inputFileLists.isEmpty()) {
+      return collections;
+    }
+    
+    // handle input files (not Kite datasets)
+    tmpFile = new Path(
+        pipeline.getConfiguration().get("hadoop.tmp.dir", "/tmp"), 
+        MorphlineCrunchTool.class.getName() + "-" + UUID.randomUUID().toString());
+    FileSystem tmpFs = tmpFile.getFileSystem(pipeline.getConfiguration());          
+    LOG.debug("Creating list of input files for mappers: {}", tmpFile);
+    long numFiles = addInputFiles(opts.inputFiles, opts.inputFileLists, tmpFile, pipeline.getConfiguration());
+    if (numFiles == 0) {
+      LOG.info("No input files found - nothing to process");
+        return collections;
       }
  
       if (opts.inputFileFormat != null) { // handle splitable input files
-        LOG.info("Using these parameters: numFiles: {}", numFiles);
-        List<Path> filePaths = new ArrayList<Path>();
-        for (String file : listFiles(tmpFs, tmpFile)) {
-          filePaths.add(new Path(file));
+      LOG.info("Using these parameters: numFiles: {}", numFiles);
+      List<Path> filePaths = new ArrayList<Path>();
+      for (String file : listFiles(tmpFs, tmpFile)) {
+        filePaths.add(new Path(file));
+      }
+      if (opts.inputFileFormat.isAssignableFrom(AvroKeyInputFormat.class)) { 
+        // hack that fixes IncompatibleClassChangeError
+        Schema schema = opts.inputFileReaderSchema != null ? 
+            opts.inputFileReaderSchema : getAvroSchemaFromPath(filePaths.get(0), new Configuration());
+        Source source = new AvroFileSource(filePaths, Avros.generics(schema));
+        collections.add(pipeline.read(source));
+      } else if (opts.inputFileFormat.isAssignableFrom(AvroParquetInputFormat.class)) {
+        if (opts.inputFileReaderSchema == null) {
+          // TODO: for convenience we should extract the schema from the parquet data files. 
+          // (i.e. we should do the same as above for avro files).
+          throw new IllegalArgumentException(
+              "--input-file-reader-schema must be specified when using --input-file-format=avroParquet");
         }
-        if (opts.inputFileFormat.isAssignableFrom(AvroKeyInputFormat.class)) { 
-          // hack that fixes IncompatibleClassChangeError
-          Schema schema = opts.inputFileReaderSchema != null ? 
-              opts.inputFileReaderSchema : getAvroSchemaFromPath(filePaths.get(0), new Configuration());
-          Source source = new AvroFileSource(filePaths, Avros.generics(schema));
-          collections.add(pipeline.read(source));
-        } else if (opts.inputFileFormat.isAssignableFrom(AvroParquetInputFormat.class)) {
-          if (opts.inputFileReaderSchema == null) {
-            // TODO: for convenience we should extract the schema from the parquet data files. 
-            // (i.e. we should do the same as above for avro files).
-            throw new IllegalArgumentException(
-                "--input-file-reader-schema must be specified when using --input-file-format=avroParquet");
-          }
-          Schema schema = opts.inputFileReaderSchema;
-          Source source = new AvroParquetFileSource(filePaths, Avros.generics(schema), opts.inputFileProjectionSchema);
-          collections.add(pipeline.read(source));
-        } else {
-          // TODO: intentionally restrict to only allow org.apache.hadoop.mapreduce.lib.input.TextInputFormat ?
-          TableSource source = new FileTableSourceImpl(
-              filePaths,
-              WritableTypeFamily.getInstance().tableOf(Writables.longs(), Writables.strings()), 
-              //AvroTypeFamily.getInstance().tableOf(Avros.nulls(), Avros.nulls()), 
-              //AvroTypeFamily.getInstance().tableOf(Avros.longs(), Avros.generics(opts.inputFileSchema)), 
-              opts.inputFileFormat);
-          collections.add(pipeline.read(source).values());                 
-        }
-      } else { // handle non-splitable input files
-        if (opts.mappers == -1) { 
-          mappers = 8 * mappers; // better accomodate stragglers
-        } else {
-          mappers = opts.mappers;
-        }
-        if (mappers <= 0) {
-          throw new IllegalStateException("Illegal number of mappers: " + mappers);
-        }
-        
-        int numLinesPerSplit = (int) ceilDivide(numFiles, mappers);
-        if (numLinesPerSplit < 0) { // numeric overflow from downcasting long to int?
-          numLinesPerSplit = Integer.MAX_VALUE;
-        }
-        numLinesPerSplit = Math.max(1, numLinesPerSplit);
+        Schema schema = opts.inputFileReaderSchema;
+        Source source = new AvroParquetFileSource(filePaths, Avros.generics(schema), opts.inputFileProjectionSchema);
+        collections.add(pipeline.read(source));
+      } else {
+        // TODO: intentionally restrict to only allow org.apache.hadoop.mapreduce.lib.input.TextInputFormat ?
+        TableSource source = new FileTableSourceImpl(
+            filePaths,
+            WritableTypeFamily.getInstance().tableOf(Writables.longs(), Writables.strings()), 
+            //AvroTypeFamily.getInstance().tableOf(Avros.nulls(), Avros.nulls()), 
+            //AvroTypeFamily.getInstance().tableOf(Avros.longs(), Avros.generics(opts.inputFileSchema)), 
+            opts.inputFileFormat);
+        collections.add(pipeline.read(source).values());                 
+      }
+    } else { // handle non-splitable input files
+      if (opts.mappers == -1) { 
+        mappers = 8 * mappers; // better accomodate stragglers
+      } else {
+        mappers = opts.mappers;
+      }
+      if (mappers <= 0) {
+        throw new IllegalStateException("Illegal number of mappers: " + mappers);
+      }
+      
+      int numLinesPerSplit = (int) ceilDivide(numFiles, mappers);
+      if (numLinesPerSplit < 0) { // numeric overflow from downcasting long to int?
+        numLinesPerSplit = Integer.MAX_VALUE;
+      }
+      numLinesPerSplit = Math.max(1, numLinesPerSplit);
 
-        int realMappers = Math.min(mappers, (int) ceilDivide(numFiles, numLinesPerSplit));
-        LOG.info("Using these parameters: numFiles: {}, mappers: {}, realMappers: {}",
-            new Object[] {numFiles, mappers, realMappers});
+      int realMappers = Math.min(mappers, (int) ceilDivide(numFiles, numLinesPerSplit));
+      LOG.info("Using these parameters: numFiles: {}, mappers: {}, realMappers: {}",
+          new Object[] {numFiles, mappers, realMappers});
 
-        boolean randomizeFewInputFiles = 
-            numFiles < pipeline.getConfiguration().getInt(MAIN_MEMORY_RANDOMIZATION_THRESHOLD, 100001);
-        if (randomizeFewInputFiles) {
-          // If there are few input files reduce latency by directly running main memory randomization 
-          // instead of launching a high latency MapReduce job
+      boolean randomizeFewInputFiles = 
+          numFiles < pipeline.getConfiguration().getInt(MAIN_MEMORY_RANDOMIZATION_THRESHOLD, 100001);
+      if (randomizeFewInputFiles) {
+        // If there are few input files reduce latency by directly running main memory randomization 
+        // instead of launching a high latency MapReduce job
           randomizeFewInputFiles(tmpFs, tmpFile);
         }
  
-        PCollection collection = pipeline.read(new NLineFileSource<String>(tmpFile, Writables.strings(), numLinesPerSplit));
+        collection = pipeline.read(new NLineFileSource<String>(tmpFile, Writables.strings(), numLinesPerSplit));
 
         if (!randomizeFewInputFiles) {
           collection = randomize(collection); // uses a high latency MapReduce job
-        }
-        collection = collection.parallelDo(new HeartbeatFn(), collection.getPType());
-        collections.add(collection);
       }
+      collection = collection.parallelDo(new HeartbeatFn(), collection.getPType());
+      collections.add(collection);
     }
     return collections;
   }
