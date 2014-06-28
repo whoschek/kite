@@ -1172,6 +1172,7 @@
         <vers.flume>1.4.0</vers.flume>
         <vers.hive>0.10.0</vers.hive>
         <vers.commons-lang>2.4</vers.commons-lang>
+        <isHadoop1>true</isHadoop1>        
       </properties>
     </profile>
 
