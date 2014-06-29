@@ -46,12 +46,9 @@ usage: hadoop [GenericOptions]... jar kite-morphlines-crunch-tool-*-job.jar org.
        [--input-file-reader-schema FILE] [--output-dataset-repository REPOSITORY_URI]
        [--output-dataset-name STRING] [--output-dataset-schema FILE]
        [--output-dataset-format STRING] [--output-dataset-partition-strategy FILE]
-       [--output-dataset-column-mapping FILE] [--output-dir HDFS_URI]
-       [--output-file-format FQCN] [--output-write-mode STRING] [--morphline-file FILE]
-       [--morphline-id STRING] [--preprocessor-class FQCN]
-       [--preprocessor-param STRING:STRING] [--postprocessor-class FQCN]
-       [--postprocessor-param STRING:STRING] [--help] [--mappers INTEGER] [--dry-run]
-       [--log4j FILE] [--verbose] [HDFS_URI [HDFS_URI ...]]
+       [--output-dataset-column-mapping FILE] [--output-write-mode STRING]
+       [--morphline-file FILE] [--morphline-id STRING] [--help] [--mappers INTEGER]
+       [--dry-run] [--log4j FILE] [--verbose] [HDFS_URI [HDFS_URI ...]]
 
 MapReduce ETL batch job driver that pipes data  from an input source (splitable or non-
 splitable HDFS files or Kite datasets) to an  output target (HDFS files or Kite dataset
@@ -220,14 +217,6 @@ Output dataset arguments:
                          store. Example: src/test/resources/columnMapping.json
 
 Output file arguments:
-  --output-dir HDFS_URI  The path of an HDFS  directory  to  write output to (unless --
-                         output-dataset-repository  is   specified).   Example:   hdfs:
-                         //localhost:/events
-  --output-file-format FQCN
-                         The Hadoop FileOutputFormat to  use  on  output for HDFS files
-                         (unless --output-dataset-repository is  specified).  Can  be a
-                         fully qualified Java class name  or  one of ['text']. Example:
-                         'text'
 
 Output dataset and file arguments:
   --output-write-mode STRING
@@ -250,32 +239,6 @@ Morphline phase (also see http://ow.ly/uSnsv):
                          morphline1
 
 Pre and Postprocessing phase (also see http://crunch.apache.org/user-guide.html):
-  --preprocessor-class FQCN
-                         The fully qualified name of  a  Java class that implements the
-                         org.kitesdk.morphline.crunch.tool.PipelineFn  interface.  This
-                         class will be called in  the  preprocessing phase to transform
-                         a Crunch  PCollection  into  another  PCollection.  Java  jars
-                         containing such  custom  code  can  be  submitted  via  the --
-                         libjars options. Example: com.mycompany.test.MyPipelineFn
-  --preprocessor-param STRING:STRING
-                         A  name:value  pair  that   will   be   fed  into  the  custom
-                         preprocessor   PipelineFn.    Multiple    --preprocessor-param
-                         arguments  can  be  specified.  Example:  --preprocessor-param
-                         ignoreErrors:false   --preprocessor-param    myJoinTable:hdfs:
-                         localhost:/myJoinTable.csv
-  --postprocessor-class FQCN
-                         The fully qualified name of  a  Java class that implements the
-                         org.kitesdk.morphline.crunch.tool.PipelineFn  interface.  This
-                         class will be called in  the postprocessing phase to transform
-                         a Crunch  PCollection  into  another  PCollection.  Java  jars
-                         containing such  custom  code  can  be  submitted  via  the --
-                         libjars options. Example: com.mycompany.test.MyPipelineFn
-  --postprocessor-param STRING:STRING
-                         A  name:value  pair  that   will   be   fed  into  the  custom
-                         postprocessor   PipelineFn.   Multiple   --postprocessor-param
-                         arguments can  be  specified.  Example:  --postprocessor-param
-                         ignoreErrors:false   --postprocessor-param   myJoinTable:hdfs:
-                         localhost:/myJoinTable.csv
 
 Misc arguments:
   --help, -help, -h      Show this help message and exit

@@ -341,12 +341,14 @@ final class MorphlineCrunchToolArgumentParser {
     ArgumentGroup outputFileArgGroup = parser.addArgumentGroup("Output file arguments");
     
     Argument outputDirArg = outputFileArgGroup.addArgument("--output-dir")
+        .help(FeatureControl.SUPPRESS)
         .metavar("HDFS_URI")
         .type(new PathArgumentType(conf).verifyIsAbsolute().verifyCanWriteParent())
         .help("The path of an HDFS directory to write output to (unless --output-dataset-repository is "
             + "specified). Example: hdfs://localhost:/events");
       
     Argument outputFileFormatArg = outputFileArgGroup.addArgument("--output-file-format")
+        .help(FeatureControl.SUPPRESS)
         .metavar("FQCN")
         .type(String.class)
         .help("The Hadoop FileOutputFormat to use on output for HDFS files "
@@ -384,6 +386,7 @@ final class MorphlineCrunchToolArgumentParser {
         "Pre and Postprocessing phase (also see http://crunch.apache.org/user-guide.html)");
     
     Argument preProcessorClassArg = preAndPostProcessingArgGroup.addArgument("--preprocessor-class")
+        .help(FeatureControl.SUPPRESS)
         .metavar("FQCN")
         .type(String.class)
         .help("The fully qualified name of a Java class that implements the " + PipelineFn.class.getName() + 
@@ -392,6 +395,7 @@ final class MorphlineCrunchToolArgumentParser {
             + "--libjars options. Example: com.mycompany.test.MyPipelineFn");
 
     Argument preProcessorParamArg = preAndPostProcessingArgGroup.addArgument("--preprocessor-param")
+        .help(FeatureControl.SUPPRESS)
         .action(Arguments.append())
         .metavar("STRING:STRING")
         .type(new PairArgumentType())
@@ -401,6 +405,7 @@ final class MorphlineCrunchToolArgumentParser {
             + "--preprocessor-param myJoinTable:hdfs:localhost:/myJoinTable.csv");
 
     Argument postProcessorClassArg = preAndPostProcessingArgGroup.addArgument("--postprocessor-class")
+        .help(FeatureControl.SUPPRESS)
         .metavar("FQCN")
         .type(String.class)
         .help("The fully qualified name of a Java class that implements the " + PipelineFn.class.getName() + 
@@ -409,6 +414,7 @@ final class MorphlineCrunchToolArgumentParser {
             + "--libjars options. Example: com.mycompany.test.MyPipelineFn");
 
     Argument postProcessorParamArg = preAndPostProcessingArgGroup.addArgument("--postprocessor-param")
+        .help(FeatureControl.SUPPRESS)
         .action(Arguments.append())
         .metavar("STRING:STRING")
         .type(new PairArgumentType())

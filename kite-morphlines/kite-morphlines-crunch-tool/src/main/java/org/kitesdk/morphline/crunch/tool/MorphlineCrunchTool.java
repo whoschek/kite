@@ -149,6 +149,8 @@ public class MorphlineCrunchTool extends Configured implements Tool {
       Utils.setLogConfigFile(opts.log4jConfigFile, getConf());
     }
 
+    LOG.info("Initializing ...");
+
     int mappers = 1;
     Pipeline pipeline; // coordinates pipeline creation and execution
     if (opts.pipelineType == PipelineType.memory) {
