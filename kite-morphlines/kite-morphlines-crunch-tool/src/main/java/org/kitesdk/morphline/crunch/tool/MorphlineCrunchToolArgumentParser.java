@@ -364,7 +364,7 @@ final class MorphlineCrunchToolArgumentParser {
         .help("Indicates different options the client may specify for handling the case where the output "
             + "path, dataset, etc. referenced by a target already exists. Can be one of "
             + "['DEFAULT', 'OVERWRITE', 'APPEND', 'CHECKPOINT']. For details see "
-            + "http://crunch.apache.org/apidocs/0.9.0/org/apache/crunch/Target.WriteMode.html");
+            + "http://crunch.apache.org/apidocs/0.10.0/org/apache/crunch/Target.WriteMode.html");
 
     ArgumentGroup morphlineArgGroup = parser.addArgumentGroup("Morphline phase (also see http://ow.ly/uSnsv)");
     
