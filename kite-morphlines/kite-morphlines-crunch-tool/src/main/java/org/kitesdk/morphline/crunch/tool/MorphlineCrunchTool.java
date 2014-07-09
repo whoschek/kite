@@ -302,10 +302,10 @@ public class MorphlineCrunchTool extends Configured implements Tool {
     long numFiles = addInputFiles(opts.inputFiles, opts.inputFileLists, tmpFile, pipeline.getConfiguration());
     if (numFiles == 0) {
       LOG.info("No input files found - nothing to process");
-        return collections;
-      }
+      return collections;
+    }
  
-      if (opts.inputFileFormat != null) { // handle splitable input files
+    if (opts.inputFileFormat != null) { // handle splitable input files
       LOG.info("Using these parameters: numFiles: {}", numFiles);
       List<Path> filePaths = new ArrayList<Path>();
       for (String file : listFiles(tmpFs, tmpFile)) {
@@ -362,13 +362,13 @@ public class MorphlineCrunchTool extends Configured implements Tool {
       if (randomizeFewInputFiles) {
         // If there are few input files reduce latency by directly running main memory randomization 
         // instead of launching a high latency MapReduce job
-          randomizeFewInputFiles(tmpFs, tmpFile);
-        }
+        randomizeFewInputFiles(tmpFs, tmpFile);
+      }
  
-        collection = pipeline.read(new NLineFileSource<String>(tmpFile, Writables.strings(), numLinesPerSplit));
+      collection = pipeline.read(new NLineFileSource<String>(tmpFile, Writables.strings(), numLinesPerSplit));
 
-        if (!randomizeFewInputFiles) {
-          collection = randomize(collection); // uses a high latency MapReduce job
+      if (!randomizeFewInputFiles) {
+        collection = randomize(collection); // uses a high latency MapReduce job
       }
       collection = collection.parallelDo(new HeartbeatFn(), collection.getPType());
       collections.add(collection);
