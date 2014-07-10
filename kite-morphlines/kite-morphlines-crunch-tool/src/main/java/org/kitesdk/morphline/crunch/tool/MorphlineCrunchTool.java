@@ -245,7 +245,7 @@ public class MorphlineCrunchTool extends Configured implements Tool {
     // handle input dataset URIs, if any
     PCollection collection = null;
     for (String datasetURI : opts.inputDatasetURIs) {
-      Dataset inputDataset = Datasets.load(datasetURI);
+      Dataset inputDataset = Datasets.load(datasetURI, Object.class);
       Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset, GenericData.Record.class);
       if (collection == null) {
         collection = pipeline.read(source);
