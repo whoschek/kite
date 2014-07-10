@@ -246,7 +246,7 @@ public class MorphlineCrunchTool extends Configured implements Tool {
     PCollection collection = null;
     for (String datasetURI : opts.inputDatasetURIs) {
       Dataset inputDataset = Datasets.load(datasetURI, Object.class);
-      Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset, GenericData.Record.class);
+      Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset);
       if (collection == null) {
         collection = pipeline.read(source);
       } else {
@@ -273,7 +273,7 @@ public class MorphlineCrunchTool extends Configured implements Tool {
           Dataset inputDataset = inputDatasetRepo.load(datasetName);
           // TODO: Consider adding optional params to upstream CrunchDatasets.asSource() API 
           // to allow override of reader schema and perhaps projection schema
-          Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset, GenericData.Record.class);
+          Source<GenericData.Record> source = CrunchDatasets.asSource(inputDataset);
           if (collection == null) {
             collection = pipeline.read(source);
           } else {
