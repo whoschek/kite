@@ -110,7 +110,7 @@ public class AbstractSolrMorphlineTest extends SolrTestCaseJ4 {
     }
 
     int batchSize = SEQ_NUM2.incrementAndGet() % 2 == 0 ? 100 : 1; //SolrInspector.DEFAULT_SOLR_SERVER_BATCH_SIZE : 1;
-    testServer = new SolrServerDocumentLoader(solrServer, batchSize);
+    testServer = new SolrServerDocumentLoader(solrServer, batchSize, null);
     deleteAllDocuments();
   }
   

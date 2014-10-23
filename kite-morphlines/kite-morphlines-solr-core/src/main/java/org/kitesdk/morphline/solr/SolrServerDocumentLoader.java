@@ -34,18 +34,18 @@ import com.google.common.base.Preconditions;
 
 /**
  * A vehicle to load (or delete) documents into a local or remote {@link SolrServer}.
- * This class should be considered private and it's API is subject to change without notice.
  */
-public class SolrServerDocumentLoader implements DocumentLoader {
+class SolrServerDocumentLoader implements DocumentLoader {
 
   private final SolrServer server; // proxy to local or remote solr server
   private long numSentItems = 0; // number of requests sent in the current transaction
   private final int batchSize;
   private final List batch = new ArrayList();
-
+  private final SolrServerAction onCommit;
+  
   private static final Logger LOGGER = LoggerFactory.getLogger(SolrServerDocumentLoader.class);
 
-  public SolrServerDocumentLoader(SolrServer server, int batchSize) {
+  public SolrServerDocumentLoader(SolrServer server, int batchSize, SolrServerAction onCommit) {
     if (server == null) {
       throw new IllegalArgumentException("solr server must not be null");
     }
@@ -54,6 +54,7 @@ public class SolrServerDocumentLoader implements DocumentLoader {
       throw new IllegalArgumentException("batchSize must be a positive number: " + batchSize);      
     }
     this.batchSize = batchSize;
+    this.onCommit = onCommit;
   }
   
   @Override
@@ -93,10 +94,19 @@ public class SolrServerDocumentLoader implements DocumentLoader {
     if (batch.size() > 0) {
       sendBatch();
     }
+    
     if (numSentItems > 0) {
       if (server instanceof ConcurrentUpdateSolrServer) {
         ((ConcurrentUpdateSolrServer) server).blockUntilFinished();
       }
+    }
+    
+    if (onCommit != null) {
+      LOGGER.info("beginOnCommit");
+      long start = System.currentTimeMillis();
+      onCommit.process(server);
+      float secs = (System.currentTimeMillis() - start) / 1000.0f;
+      LOGGER.info("endOnCommit: onCommit took " + secs + " secs");
     }
   }
 
@@ -186,5 +196,4 @@ public class SolrServerDocumentLoader implements DocumentLoader {
   public SolrServer getSolrServer() {
     return server;
   }
-  
 }

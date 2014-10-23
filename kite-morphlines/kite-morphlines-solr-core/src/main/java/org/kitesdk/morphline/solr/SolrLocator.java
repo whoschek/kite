@@ -112,6 +112,10 @@ public class SolrLocator {
   }
 
   public DocumentLoader getLoader() {
+    return getLoader(null);
+  }
+
+  DocumentLoader getLoader(SolrServerAction onCommitAction) {
     if (context instanceof SolrMorphlineContext) {
       DocumentLoader loader = ((SolrMorphlineContext)context).getDocumentLoader();
       if (loader != null) {
@@ -119,7 +123,7 @@ public class SolrLocator {
       }
     }
     SolrServer solrServer = getSolrServer();
-    return new SolrServerDocumentLoader(solrServer, batchSize);
+    return new SolrServerDocumentLoader(solrServer, batchSize, onCommitAction);
   }
 
   public IndexSchema getIndexSchema() {

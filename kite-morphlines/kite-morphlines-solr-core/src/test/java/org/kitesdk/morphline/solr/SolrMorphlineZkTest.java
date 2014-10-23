@@ -48,7 +48,7 @@ public class SolrMorphlineZkTest extends AbstractSolrMorphlineZkTest {
     
     waitForRecoveriesToFinish(false);
     
-    morphline = parse("test-morphlines" + File.separator + "loadSolrBasic");    
+    morphline = parse("test-morphlines" + File.separator + "loadSolrBasicWithCommit");    
     Record record = new Record();
     record.put(Fields.ID, "id0-innsbruck");
     record.put("text", "mytext");

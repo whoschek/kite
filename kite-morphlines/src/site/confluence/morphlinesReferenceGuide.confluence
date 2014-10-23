@@ -3073,7 +3073,15 @@ The command provides the following configuration options:
 
 || Property Name || Default || Description ||
 | solrLocator | n/a | Solr location parameters as described separately above. |
-| boosts | \[\] | An optional JSON object containing zero or more fieldName\-boostValue mappings where the fieldName is a String and the boostValue is a float. The default boost is {{1.0}}. |
+| boosts | null | An optional JSON object containing zero or more fieldName\-boostValue mappings where the fieldName is a String and the boostValue is a float. The default boost is {{1.0}}. |
+| commit | null | An optional JSON object that determines what happens on Notifications.LifecycleEvent.COMMIT\_TRANSACTION events. If this JSON object is omitted just send any outstanding buffered data and wait for a corresponding ack from Solr, otherwise also send a subsequent commit with the following parameters to Solr: |
+
+Commit configuration options:
+
+|| Property Name || Default || Description ||
+| waitFlush | true | if true block until index changes are flushed to disk. |
+| waitSearcher | true | if true block until a new searcher is opened and registered as the main query searcher, making the changes visible. |
+| softCommit | false | if true makes index changes visible while neither fsync-ing index files nor writing a new index descriptor. |
 
 Examples:
 - [#loadSolrUpdate]
@@ -3100,6 +3108,7 @@ loadSolr {
   boosts : {
     id : 2.0 # assign to the id field a boost value 2.0
   }
+  # commit : { waitFlush:true, waitSearcher:false, softCommit:true } # This line is entirely optional
 }
 {code}
 {anchor:loadSolrPartialUpdate}
@@ -3132,7 +3141,8 @@ java { code : """
 }
 
 loadSolr {
-  <solrLocator goes here>
+  solrLocator : <solrLocator goes here>
+  commit : { waitFlush:true, waitSearcher:true, softCommit:true }
 }
 {code}
 
@@ -3155,7 +3165,8 @@ setValues {
 }
 
 loadSolr {
-  <solrLocator goes here>
+  solrLocator : <solrLocator goes here>
+  commit : { waitFlush:true, waitSearcher:true, softCommit:true }
 }
 {code}
 {anchor:loadSolrDeleteByQuery}
@@ -3171,7 +3182,8 @@ setValues {
 }
 
 loadSolr {
-  <solrLocator goes here>
+  solrLocator : <solrLocator goes here>
+  commit : { waitFlush:true, waitSearcher:true, softCommit:true }
 }
 {code}
 

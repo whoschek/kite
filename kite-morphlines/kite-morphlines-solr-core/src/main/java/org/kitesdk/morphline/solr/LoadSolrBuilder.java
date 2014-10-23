@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.kitesdk.morphline.api.Command;
@@ -32,7 +33,6 @@ import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.api.TypedSettings;
 import org.kitesdk.morphline.base.AbstractCommand;
 import org.kitesdk.morphline.base.Configs;
-import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Metrics;
 import org.kitesdk.morphline.base.Notifications;
 
@@ -74,7 +74,24 @@ public final class LoadSolrBuilder implements CommandBuilder {
       Config solrLocatorConfig = getConfigs().getConfig(config, "solrLocator");
       SolrLocator locator = new SolrLocator(solrLocatorConfig, context);
       LOG.debug("solrLocator: {}", locator);
-      this.loader = locator.getLoader();
+      
+      SolrServerAction commitAction = null;
+      Config commitConfig = getConfigs().getConfig(config, "commit", null);
+      if (commitConfig != null) {
+        Configs configs = new Configs();
+        final boolean waitFlush = configs.getBoolean(commitConfig, "waitFlush", true); 
+        final boolean waitSearcher = configs.getBoolean(commitConfig, "waitSearcher", true);
+        final boolean softCommit = configs.getBoolean(commitConfig, "softCommit", false);
+        configs.validateArguments(commitConfig);
+        commitAction = new SolrServerAction() {        
+          @Override
+          public void process(SolrServer solrServer) throws SolrServerException, IOException {
+            solrServer.commit(waitFlush, waitSearcher, softCommit);          
+          }
+        };
+      }
+      this.loader = locator.getLoader(commitAction);
+      
       Config boostsConfig = getConfigs().getConfig(config, "boosts", ConfigFactory.empty());
       for (Map.Entry<String, Object> entry : new Configs().getEntrySet(boostsConfig)) {
         String fieldName = entry.getKey();        
