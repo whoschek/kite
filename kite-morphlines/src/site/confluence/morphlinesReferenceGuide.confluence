@@ -3083,14 +3083,15 @@ Commit configuration options:
 | waitSearcher | true | if true block until a new searcher is opened and registered as the main query searcher, making the changes visible. |
 | softCommit | false | if true makes index changes visible while neither fsync-ing index files nor writing a new index descriptor. |
 
-Note: Sending explicit commits from loadSolr to Solr isn't necessary for MapReduceIndexerTool 
-because MapReduceIndexerTool applies appropriate explicit commits outside of the morphline already anyway. 
-Sending explicit commits from loadSolr to Solr is also typically not recommended for continuous streaming 
+Note: Sending an explicit commit from loadSolr to Solr isn't necessary for MapReduceIndexerTool 
+because MapReduceIndexerTool applies an appropriate explicit commit outside of the morphline already anyway. 
+Sending an explicit commit from loadSolr to Solr is also not recommended for continuous streaming 
 ingestion use cases (e.g. Flume Morphline Solr Sink) because the Solr autocommit feature specified in 
-{{solrconfig.xml}} tends to be more suitable for such use cases. 
-However, sending explicit commits from loadSolr to Solr can be useful for use cases that apply a finite 
-set of document updates, e.g. via CrunchIndexerTool, because explicit commits provide guarantees wrt. 
-timing of durability and subsequent visibility of updates in Solr queries.
+{{solrconfig.xml}} is more suitable and efficient for such use cases. 
+However, sending an explicit commit from loadSolr to Solr can, in rare cases, be useful for use cases that apply a finite 
+set of document updates, e.g. via CrunchIndexerTool, because an explicit commit provides guarantees wrt. 
+timing of durability and subsequent visibility of updates in Solr queries. 
+For more background see [http://lucidworks.com/blog/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud]
 
 Examples:
 - [#loadSolrUpdate]
